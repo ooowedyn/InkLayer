@@ -22,11 +22,3 @@ Official implementation of our _Instance Segmentation of Scene Sketches Using Na
 ## Gallery
 
 ![Results Gallery Image](docs/gallery.png)
-
-## Citation
-
-If you use this code for your research, please cite the following work:
-
-```
-arXiv citation coming soon!
-```
