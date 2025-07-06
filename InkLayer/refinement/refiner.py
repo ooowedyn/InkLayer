@@ -648,4 +648,5 @@ def run_refinement_on_sketch_dir(sketch_dir, bboxes_path, out_base_dir=None):
     res["final_seg_sketch"].save(f"{out_base_dir}/segmented_sketch_final.png")
 
     print(f"Results saved to {out_dir}")
+    print(f"Segmented sketch visualized at {out_base_dir}/segmented_sketch_final.png")
 

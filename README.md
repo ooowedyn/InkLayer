@@ -56,8 +56,9 @@ git submodule update --init --recursive
 
 Okay, now let's set up the dependencies! 
 ```bash
-(cd ./InkLayer/third-party/GroundingDINO && pip install -e . )
-(cd ./InkLayer/third-party/segment-anything && pip install -e . )
+(cd ./InkLayer/third_party/GroundingDINO && pip install -e . )
+(cd ./InkLayer/third_party/segment-anything && pip install -e . )
+pip install scikit-image
 ```
 
 Download weights! (You can execute this command wherever, the weights will be downloaded into `models` correctly ◝(ᵔᗜᵔ)◜)
@@ -102,7 +103,7 @@ If you would like to skip saving intermediate outputs (e.g., intermediate masks,
 python main.py --img data/bunny_cook_sketch.png --no_intermediate
 ```
 
-The final segmented sketch is visualized at `./{OUT_DIR}/{IMAGE_NAME}/segmented_sketch_final.png` and the masks are at `./{OUT_DIR}/{IMAGE_NAME}/masks_final/mask_{ID}.png`. 
+The final segmented sketch is visualized at `./{OUT_DIR}/{IMAGE_NAME}/segmented_sketch_final.png` and the masks are at `./{OUT_DIR}/{IMAGE_NAME}/masks_final/`. 
 
 ## 📎 Notes
 For reference, here are the  commit hash for the submodules that we used in our experiments:
