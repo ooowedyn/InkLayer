@@ -1,0 +1,11 @@
+[submodule "InkLayer/third_party/Depth_Anything_V2"]
+	path = InkLayer/third_party/Depth_Anything_V2
+	url = https://github.com/DepthAnything/Depth-Anything-V2
+
+[submodule "InkLayer/third_party/GroundingDINO"]
+	path = InkLayer/third_party/GroundingDINO
+	url = https://github.com/IDEA-Research/GroundingDINO.git
+
+[submodule "InkLayer/third_party/segment-anything"]
+  path = InkLayer/third_party/segment-anything
+  url = https://github.com/facebookresearch/segment-anything.git
