@@ -6,15 +6,15 @@
 
   <h1 align="center">Instance Segmentation of Scene Sketches Using Natural Image Priors</h1>
   <p align="center">
-    <a href="https://mia-tang.com/"><strong>Mia Tang</strong></a>
+    <a href="https://mia-tang.com/" target="_blank"><strong>Mia Tang</strong></a>
     ·
-    <a href="https://yael-vinker.github.io/website/"><strong>Yael Vinker</strong></a>
+    <a href="https://yael-vinker.github.io/website/" target="_blank"><strong>Yael Vinker</strong></a>
     ·
-    <a href="https://nauhcnay.github.io/"><strong>Chuan Yan</strong></a>
+    <a href="https://nauhcnay.github.io/" target="_blank"><strong>Chuan Yan</strong></a>
     ·
-    <a href="https://lllyasviel.github.io/Style2PaintsResearch/lvmin"><strong>Lvmin Zhang</strong></a>
+    <a href="https://lllyasviel.github.io/Style2PaintsResearch/lvmin" target="_blank"><strong>Lvmin Zhang</strong></a>
     ·
-    <a href="https://graphics.stanford.edu/~maneesh/"><strong>Maneesh Agrawala</strong></a>
+    <a href="https://graphics.stanford.edu/~maneesh/" target="_blank"><strong>Maneesh Agrawala</strong></a>
   </p>
   <h2 align="center">SIGGRAPH 2025</h2>
 
@@ -25,21 +25,29 @@
 
   <p align="center">
   <br>
-    <a href="https://inklayer.github.io/"><strong>🌐 Project Page</strong></a>
+    <a href="https://inklayer.github.io/" target="_blank"><strong>🌐 Project Page</strong></a>
     |
-    <a href="https://arxiv.org/abs/2502.09608"><strong>📄 arXiv</strong></a>
+    <a href="https://arxiv.org/abs/2502.09608" target="_blank"><strong>📄 arXiv</strong></a>
   </p>
 </p>
 
 
-# 📚 Table of Contents
+## 📚 Table of Contents
 - [🔖 Release Status](#-release-status)
 - [🛠️ Installation](#️-installation)
 - [🏃‍♀️ Running Inference](#️-running-inference)
 - [📎 Notes](#-notes)
 - [🖊️ Citation](#-citation)
 
-# 🛠️ Installation
+## 🔖 Release Status
+
+- &#x1F5F9; Benchmark dataset and dataset viewer: <a href="https://www.inkscenes-dataset.com/" target="_blank">🔗 Visit Our Viewer!</a>
+- &#x1F5F9; Segmentation inference code and weights
+- &#9744; Sketch layering code & sketch editing interface
+- &#9744; Hugginface demo
+
+
+## 🛠️ Installation
 
 Please clone this repository with submodules!
 ```bash
@@ -68,7 +76,7 @@ Run the sanity checks above. If you see the correct versions (something like `2.
 </details>
 
 
-## Install dependencies
+### Install dependencies
 You should see `GroundingDINO`, `segment-anything`, and `Depth_Anything_V2` in `InkLayer/third_party/` folder. If you do not, it means you did not clone the repository with submodules 😔. Run the following command to clone the submodules:
 ```bash
 git submodule update --init --recursive
@@ -81,7 +89,7 @@ Okay, now let's set up the dependencies!
 pip install scikit-image
 ```
 
-## Download Weights
+### Download Weights
 ```bash
 bash models/download_ckpts.sh
 ```
@@ -106,7 +114,7 @@ We observe very similar performance between the two versions of the weights, wit
 
 </details>
 
-## Install InkLayer
+### Install InkLayer
 Now you can install InkLayer. At the root directory, run
 ```bash 
 pip install -e .
@@ -114,7 +122,7 @@ pip install -e .
 Now you should be able to import InkLayer anywhere in your Python scripts! 🎉
 
 
-# 🏃‍♀️ Running Inference
+## 🏃‍♀️ Running Inference
 You can run inference on a single image using the following command:
 ```bash
 python main.py --img {PATH_TO_YOUR_IMAGE}
@@ -137,14 +145,14 @@ python main.py --img data/bunny_cook_sketch.png --no_intermediate
 
 The final segmented sketch is visualized at `./{OUT_DIR}/{IMAGE_NAME}/segmented_sketch_final.png` and the masks are at `./{OUT_DIR}/{IMAGE_NAME}/masks_final/`. 
 
-# 📎 Notes
+## 📎 Notes
 For reference, here are the  commit hash for the submodules that we used in our experiments:
 ```bash
 GroundingDINO: 856dde20aee659246248e20734ef9ba5214f5e44
 segment-anything: 3f6d89896768f04ded863803775069855c5360b6
 ```
 
-# 🖊️ Citation
+## 🖊️ Citation
 If you find our work useful, please consider citing our paper:
 ```bibtex
 @inproceedings{tang2025instance,
