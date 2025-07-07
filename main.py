@@ -24,7 +24,7 @@ def run_inklayer_pipeline(input_path, out_base_dir, no_intermediate=False):
     input_pil.save(os.path.join(out_dir, "input.png"))
     
     """
-    Run DINO inference on sketch to get bounding boxes and phrases
+    Run DINO inference on sketch to get bounding boxes 
     """
     dino_out_dict = run_ft_dino_on_sketch(sketch_path=input_path)
     processed_boxes_tensor, pred_phrases = process_dino_output(dino_out_dict, input_pil)
