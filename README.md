@@ -44,7 +44,7 @@
 - &#x1F5F9; Benchmark dataset and dataset viewer: <a href="https://www.inkscenes-dataset.com/" target="_blank">🔗 Visit Our Viewer!</a>
 - &#x1F5F9; Segmentation inference code and weights
 - &#9744; Sketch layering code & sketch editing interface
-- &#9744; Hugginface demo
+- &#9744; Huggingface demo
 
 
 ## 🛠️ Installation
