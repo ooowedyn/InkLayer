@@ -4,4 +4,4 @@ In this folder, we provide scripts that were used for generating the InkScenes d
 
 ### Brush augmentation script
 
-We recommend using `vscode+ExtendedScript` for running our script (with access to Illustrator). The instructions are included in the `brush_augmentation_script.jsx` file. All necessary instructions are provided within the script.
+We recommend using `vscode+ExtendedScript` for running our script (with access to Illustrator). All necessary instructions are provided within the `brush_augmentation_script.jsx` file.
