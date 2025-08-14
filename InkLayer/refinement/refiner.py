@@ -1,7 +1,5 @@
 import numpy as np
 import cv2
-import torch
-from scipy.spatial import KDTree
 from PIL import Image
 from scipy import ndimage
 from skimage.morphology import binary_dilation, binary_closing, disk
@@ -13,231 +11,10 @@ import subprocess
 
 import InkLayer
 proj_dir = os.path.dirname(InkLayer.__file__)
-from InkLayer.third_party.Depth_Anything_V2.depth_anything_v2.dpt import DepthAnythingV2
 from InkLayer.utils.visualization import generate_pastel_colors, color_sketch_by_masks
-from InkLayer.refinement.utils import compute_bbox_iou, compute_mask_bbox, sketch_to_01binary, get_binned_frequent, unnormalize_bboxes
-
-DEVICE = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps" if torch.backends.mps.is_available() else "cpu"
-)
-depth_model_configs = {
-    "vits": {"encoder": "vits", "features": 64, "out_channels": [48, 96, 192, 384]},
-    "vitb": {"encoder": "vitb", "features": 128, "out_channels": [96, 192, 384, 768]},
-    "vitl": {
-        "encoder": "vitl",
-        "features": 256,
-        "out_channels": [256, 512, 1024, 1024],
-    },
-    "vitg": {
-        "encoder": "vitg",
-        "features": 384,
-        "out_channels": [1536, 1536, 1536, 1536],
-    },
-}
-
-encoder = "vitb"  # or 'vits', 'vitb', 'vitg'
-depth_model = DepthAnythingV2(**depth_model_configs[encoder])
-depth_model.load_state_dict(
-    torch.load(f"{proj_dir}/../models/depth_anything_v2_{encoder}.pth", map_location="cpu")
-)
-depth_model = depth_model.to(DEVICE).eval()
-
-SKETCH_THRESHOLD=250 # This is the threshold to consider a pixel as part of the sketch
-
-def get_depth_map(sketch_path):
-    sketch = cv2.imread(sketch_path)
-    depth = depth_model.infer_image(sketch)  # HxW raw depth map in numpy
-    return depth
-
-
-def sparse_sketch_sample(binary_edge_map):
-    radius = binary_edge_map.shape[0] * 0.01
-    # Get all edge coordinates
-    edge_points = np.column_stack(np.where(binary_edge_map > 0))
-    # number of points we will sample on the edge map
-    num_points = int(0.05 * len(edge_points))
-    # Convert edge points to a KDTree for efficient distance queries
-    tree = KDTree(edge_points)
-    sampled_points = []
-    remaining_indices = set(range(len(edge_points)))
-    while remaining_indices:
-        # Take the first available point
-        current_index = next(iter(remaining_indices))
-        current_point = edge_points[current_index]
-        sampled_points.append(tuple(current_point))
-        # Find all points within the radius of the current point
-        indices_to_exclude = tree.query_ball_point(current_point, radius)
-        # Remove these indices from the remaining set
-        remaining_indices.difference_update(indices_to_exclude)
-    return sampled_points
-
-
-
-def get_mask_depth_score(mask, edge_points, depth_map):
-    depth_values = []
-    depth_value_points = []
-
-    # 1. First get depth from edge points that lie within mask
-    for point in edge_points:
-        y, x = point
-        if mask[y, x]:
-            depth_values.append(depth_map[y, x])
-            depth_value_points.append([y, x])
-
-    if not depth_values:
-        return float("inf")  # Return infinity if no points in mask
-
-    res = get_binned_frequent(depth_values)
-    return res
-
-
-def build_containment_graph(masks, bboxes, depth_scores, image_size):
-    """
-    Build a directed graph where edges indicate containment, using dynamic epsilon.
-
-    Args:
-        masks: List of binary masks
-        bboxes: List of bounding boxes (x1,y1,x2,y2)
-        depth_scores: List of depth scores for each mask
-        image_size: Tuple of (height, width) of the image
-
-    Returns:
-        containment_graph: Boolean matrix where containment_graph[i,j] indicates if box i contains box j
-    """
-    n = len(masks)
-    containment_graph = np.zeros((n, n), dtype=bool)
-
-    # Calculate epsilon as a fraction of the image diagonal
-    image_diagonal = np.sqrt(image_size[0] ** 2 + image_size[1] ** 2)
-    epsilon = image_diagonal * 0.05  # 1% of image diagonal
-
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                # Check if box i contains box j
-                box_i = bboxes[i]
-                box_j = bboxes[j]
-
-                # Containment check with epsilon tolerance
-                is_contained = (
-                    box_i[0] - epsilon <= box_j[0]  # left edge
-                    and box_i[1] - epsilon <= box_j[1]  # top edge
-                    and box_i[2] + epsilon >= box_j[2]  # right edge
-                    and box_i[3] + epsilon >= box_j[3]  # bottom edge
-                )
-
-                # Only set containment if the boxes are actually different in size
-                # This prevents marking boxes of very similar dimensions as containing each other
-                box_i_size = (box_i[2] - box_i[0]) * (box_i[3] - box_i[1])
-                box_j_size = (box_j[2] - box_j[0]) * (box_j[3] - box_j[1])
-                size_diff = abs(box_i_size - box_j_size)
-
-                if is_contained and size_diff > (
-                    epsilon * epsilon
-                ):  # Use squared epsilon for area comparison
-                    containment_graph[i, j] = True
-
-                iou = compute_bbox_iou(box_i, box_j)
-                if iou > 0.7:
-                    containment_graph[i, j] = True
-
-    return containment_graph
-
-def build_containment_graph_fast(
-    masks,
-    bboxes,
-    depth_scores,
-    image_size,
-    eps_frac: float = 0.05,   # fraction of image diagonal used as ε
-    iou_thr:  float = 0.7,    # IoU threshold that also triggers containment
-):
-    if len(bboxes) == 0:
-        return np.zeros((0, 0), dtype=bool)
-
-    b = np.asarray(bboxes, dtype=float)           
-    N = b.shape[0]
-    H, W = image_size
-    eps  = np.hypot(H, W) * eps_frac             
-
-    # broadcast (N,1,4) vs (1,N,4)
-    b1, b2 = b[:, None, :], b[None, :, :]
-
-    # Check if boxes are contained within each otherå
-    contained = (
-        (b1[..., 0] - eps <= b2[..., 0]) &    # left
-        (b1[..., 1] - eps <= b2[..., 1]) &    # top
-        (b1[..., 2] + eps >= b2[..., 2]) &    # right
-        (b1[..., 3] + eps >= b2[..., 3])      # bottom
-    )
-
-    # Ensure that boxes are not too similar in size
-    areas      = (b[:, 2] - b[:, 0]) * (b[:, 3] - b[:, 1])     
-    size_diff  = np.abs(areas[:, None] - areas[None, :])       
-    contained &= size_diff > (eps ** 2)                       
-
-    # IoU matrix (vectorised)
-    ix1 = np.maximum(b1[..., 0], b2[..., 0])
-    iy1 = np.maximum(b1[..., 1], b2[..., 1])
-    ix2 = np.minimum(b1[..., 2], b2[..., 2])
-    iy2 = np.minimum(b1[..., 3], b2[..., 3])
-
-    iw  = np.clip(ix2 - ix1, 0, None)
-    ih  = np.clip(iy2 - iy1, 0, None)
-    inter = iw * ih
-
-    area1 = areas[:, None]
-    area2 = areas[None, :]
-    iou   = inter / (area1 + area2 - inter + 1e-6)
-
-    # final containment graph
-    graph = contained | (iou > iou_thr)
-
-    # no self-edges
-    np.fill_diagonal(graph, False)
-    return graph
-
-def sort_sketch_masks(masks, bboxes, sketch_path, depth_sketch=None):
-    # Validate inputs
-    assert os.path.exists(sketch_path), f"Sketch path {sketch_path} does not exist."
-    if depth_sketch is None:
-        depth_sketch = get_depth_map(sketch_path)
-
-    # Get image dimensions
-    image = cv2.imread(sketch_path)
-    h, w = image.shape[:2]
-
-    # Convert sketch to binary and sample points
-    binary_sketch = sketch_to_01binary(image)
-    sampled_points = sparse_sketch_sample(binary_sketch)
-
-    # Scale bboxes if normalized
-    if np.all(np.array(bboxes) <= 1.0):
-        bboxes = [box * np.array([w, h, w, h]) for box in bboxes]
-
-    # Get initial depth scores
-    depth_scores = []
-    for mask in masks:
-        score = get_mask_depth_score(mask, sampled_points, depth_sketch)
-        depth_scores.append(score)
-
-    # Build containment relationships
-    containment = build_containment_graph_fast(masks, bboxes, depth_scores, image.shape[:2])
-
-    # Get initial sorting based on depth scores
-    final_order = list(np.argsort(depth_scores)[::-1])
-    for _ in range(2):
-        for i in range(len(final_order)):
-            for j in range(i + 1, len(final_order)):
-                idx1 = final_order[i]
-                idx2 = final_order[j]
-
-                # ONLY check if the earlier box contains the later box
-                if containment[idx1, idx2]:  # if earlier contains later
-                    final_order[i], final_order[j] = final_order[j], final_order[i]
-
-    return final_order, depth_scores, containment
+from InkLayer.refinement.utils import compute_bbox_iou, compute_mask_bbox, unnormalize_bboxes
+from InkLayer.refinement.depth_sort import get_depth_map, sort_sketch_masks
+SKETCH_THRESHOLD = 250 # Change this if you want stricter sketch detection
 
 
 def clean_delicate_mask(mask, isolation_threshold=1, window_size=3):
@@ -253,7 +30,6 @@ def clean_delicate_mask(mask, isolation_threshold=1, window_size=3):
     cleaned[neighbor_count <= isolation_threshold] = False
 
     return cleaned
-
 
 def composite_and_parse_masks(masks, bboxes, empty_threshold=0.05):
     if not masks:
@@ -332,7 +108,7 @@ def parse_masks_to_disjoint_masks(masks_np, bboxes, sketch_path, depth_map=None)
         if num_masks > 1 and mask_area > 0.9 * sketch_area:
             sorted_masks[i] = np.zeros_like(mask)
             num_masks -= 1
-
+    
     disjoint_masks, mask_info = composite_and_parse_masks(sorted_masks, sorted_bboxes)
     cleaned_masks = [clean_delicate_mask(mask) for mask in disjoint_masks]
 
@@ -650,3 +426,13 @@ def run_refinement_on_sketch_dir(sketch_dir, bboxes_path, out_base_dir=None):
     print(f"Results saved to {out_dir}")
     print(f"Segmented sketch visualized at {out_base_dir}/segmented_sketch_final.png")
 
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Refine SAM masks on a sketch directory.")
+    parser.add_argument("--sketch_dir", type=str, help="Directory containing the sketch and masks.")
+    parser.add_argument("--bboxes_path", type=str, help="Path to the bounding boxes JSON file.")
+    parser.add_argument("--out_base_dir", type=str, default=None, help="Base directory for output results.")
+    
+    args = parser.parse_args()
+    
+    run_refinement_on_sketch_dir(args.sketch_dir, args.bboxes_path, args.out_base_dir)

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+  <div class="max-w-7xl mx-auto p-6">
+    <h1 id="sketch-editing-demo" class="text-2xl font-semibold text-gray-800 mb-4">InkLayer Editor</h1>
+
+
+    <div id="workspaceWrapper" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Sketch Layers Section -->
+      <div id="strokeLayersWrapper" class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+
+        <!--Title-->
+        <div class="flex gap-x-2 place-items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
+          </svg>
+          <h3 id="sketch-layers" class="text-xl font-semibold text-gray-800 mb-2">Layers
+          </h3>
+        </div>
+
+
+        <!--Layer controls UI-->
+        <div class="flex gap-3 my-2">
+          <button id="deleteLayerButton" class="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 text-2xl text-gray-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+            </svg>
+          </button>
+
+          <button id="copyLayerButton" class="px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 text-2xl text-gray-700 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+            </svg>
+          </button>
+        </div>
+
+
+        <div id="strokeLayersDisplayContainer" class="bg-gray-50 rounded-lg p-4 min-h-[400px] grid grid-cols-2 gap-2">
+          <!-- Layers will be inserted here -->
+        </div>
+        <div id="inpaintResultContainer"></div>
+      </div>
+
+      <!-- Canvas Section -->
+      <div id="canvasWrapper" class="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+
+
+        <!-- Canvas Section -->
+        <div class="mb-8">
+          <h3 id="canvas" class="text-xl font-semibold text-gray-800 mb-2">Canvas</h3>
+
+          <canvas id="myCanvas" class="bg-white border border-gray-200 rounded-md shadow-sm  text-2xl text-gray-700 transition-colors rounded-sm" width="550" height="550"></canvas>
+
+          <!--Drawing Controls Section -->
+          <div class="drawing-controls bg-gray-50 p-4 rounded-lg border mt-4">
+            <h3 class="text-lg font-semibold mb-3">Drawing Tools</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Drawing Mode Toggle -->
+              <div class="flex flex-col space-y-2">
+                <button id="drawModeBtn" class="px-4 py-2 bg-blue-200 text-black rounded hover:bg-blue-600 transition-colors">
+                  Drawing Mode
+                </button>
+                <button id="saveDrawingBtn" class="px-4 py-2 bg-green-200 text-black rounded hover:bg-green-600 transition-colors">
+                  Save Drawing
+                </button>
+              </div>
+
+              <!-- Drawing Settings -->
+              <div class="space-y-3">
+                <div class="flex items-center space-x-3">
+                  <label for="brushSize" class="text-sm font-medium">Brush Size:</label>
+                  <input type="range" id="brushSize" min="1" max="20" value="5" class="flex-1">
+                  <span id="brushSizeDisplay" class="text-sm font-medium w-8">5</span>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                  <label for="brushColor" class="text-sm font-medium">Color:</label>
+                  <input type="color" id="brushColor" value="#000000" class="w-12 h-8 border rounded cursor-pointer">
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 text-sm text-gray-600">
+              <p><strong>Drawing Instructions:</strong></p>
+              <ul class="list-disc list-inside space-y-1">
+                <li><strong>Drawing Mode:</strong> Click to start drawing on canvas</li>
+                <li><strong>Save Drawing Only:</strong> Save your drawing (MUST save before layering sketch drawn on canvas)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Controls Section -->
+      <div id="controlsWrapper" class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+        <div class="flex gap-x-2 place-items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.276 3.277a3.004 3.004 0 0 1-2.25-2.25l3.276-3.276a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437 1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008Z" />
+          </svg>
+          <h3 id="sketch-operations" class="text-xl font-semibold text-gray-800">Sketch Ops
+          </h3>
+        </div>
+
+
+        <div id="loading-spinner" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-white p-6 rounded-lg text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p class="text-lg">Processing...</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Operation Buttons -->
+          <div class="my-4 gap-y-4 flex flex-col">
+            <button id="segmentButton" class="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 text-xl text-gray-700 transition-colors">
+              Layer my sketch!
+            </button>
+          </div>
+        </div>
+
+        <div class="flex gap-x-2">
+          <!-- File Upload Section -->
+          <div class="space-y-1">
+            <input type="file" id="imageLoader" class="hidden" accept="image/*">
+            <button onclick="document.getElementById('imageLoader').click()" class="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 text-xl text-gray-700 transition-colors flex gap-x-2">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+              </svg>
+
+              Upload Sketch
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    html {
+      font-family: "Patrick Hand", cursive;
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .drawing-mode {
+      cursor: crosshair !important;
+    }
+
+    #myCanvas {
+      image-rendering: 'smooth';
+      /* or 'smooth' */
+    }
+  </style>
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"> </script>
+</body>
+
+</html>

@@ -41,10 +41,10 @@
 
 ## 🔖 Release Status
 
-- &#x1F5F9; Benchmark dataset and dataset viewer: <a href="https://www.inkscenes-dataset.com/" target="_blank">🔗 Visit Our Viewer!</a>
-- &#x1F5F9; Segmentation inference code and weights
-- &#9744; Sketch layering code & sketch editing interface
-- &#9744; Huggingface demo
+- ✅ Benchmark dataset and dataset viewer: <a href="https://www.inkscenes-dataset.com/" target="_blank">🔗 Visit Our Viewer!</a>
+- ✅ Segmentation inference code and weights
+- ✅ Sketch layering code & sketch editing interface
+- &#9744; Hugginface demo
 
 
 ## 🛠️ Installation
@@ -86,7 +86,6 @@ Okay, now let's set up the dependencies!
 ```bash
 (cd ./InkLayer/third_party/GroundingDINO && pip install -e . )
 (cd ./InkLayer/third_party/segment-anything && pip install -e . )
-pip install scikit-image
 ```
 
 ### Download Weights
@@ -118,11 +117,16 @@ We observe very similar performance between the two versions of the weights, wit
 Now you can install InkLayer. At the root directory, run
 ```bash 
 pip install -e .
+pip install scikit-image # for basic segmentation (required)
+pip install diffusers accelerate # for inpainting (skip if not needed)
+pip install flask # for sketch editing interface (skip if not needed)
 ```
 Now you should be able to import InkLayer anywhere in your Python scripts! 🎉
 
 
 ## 🏃‍♀️ Running Inference
+
+### Segmentation Inference
 You can run inference on a single image using the following command:
 ```bash
 python main.py --img {PATH_TO_YOUR_IMAGE}
@@ -145,22 +149,62 @@ python main.py --img data/bunny_cook_sketch.png --no_intermediate
 
 The final segmented sketch is visualized at `./{OUT_DIR}/{IMAGE_NAME}/segmented_sketch_final.png` and the masks are at `./{OUT_DIR}/{IMAGE_NAME}/masks_final/`. 
 
+<details>
+<summary><strong>Common Questions</strong></summary>
+
+1. Computation Time: The inference time depends on the size of the input image, and how complex the sketch is. It can take a little while if your sketch is on the extreme complicated side due to our non-optimized sketch NMS process.
+
+2. libpng Warning: If you see `libpng warning: iCCP: known incorrect sRGB profile` when running the inference, it means your input image has an incorrect sRGB profile. You can fix it following the instructions in this [StackOverflow post](https://stackoverflow.com/questions/22745076/libpng-warning-iccp-known-incorrect-srgb-profile).
+
+</details>
+
+### Layer Completion
+To run the layer completion step, you just add a `--inpaint` flag to calling the `main.py` script. The output will be saved to `{OUT_DIR}/complete_layers` or `complete_layers_rgba` if you want the layers with transparent background.  
+
+<details>
+<summary><strong>Running on existing segmented sketch</strong></summary>
+To run the layer completion step on an existing segmentation output directory, simply run <code>python InkLayer/inpaint_ControlNet.py --dir {PATH_TO_SEG_OUTPUT_DIR}</code>. Our default code uses the stable diffusion inpaintng with controlnet conditioned for best performance. 
+</details>
+
+<details>
+<summary><strong>⚠️ A note on completion quality</strong></summary>
+The performance heavily depends on the inpainting model (and is generally highly stochastic), so we encourage you to experiment with different models and seeds. Also feel free to play around with the inpainting parameters and prompt.
+</details>
+
+
+## 🏃‍♀️ Running Sketch Editing Interface
+We also provide a sketch editing interface that allow you to upload / draw a sketch and edit it interactively.
+
+To start the interface, run the following command:
+```bash
+python -m custom_interface
+```
+This will start a Flask server on `http://localhost:5000/`. You can open this URL in your web browser to access the interface.
+
 ## 📎 Notes
 For reference, here are the  commit hash for the submodules that we used in our experiments:
 ```bash
 GroundingDINO: 856dde20aee659246248e20734ef9ba5214f5e44
 segment-anything: 3f6d89896768f04ded863803775069855c5360b6
+Depth_Anything_V2: e5a2732d3ea2cddc081d7bfd708fc0bf09f812f1
 ```
 
 ## 🖊️ Citation
 If you find our work useful, please consider citing our paper:
 ```bibtex
-@inproceedings{tang2025instance,
-  title     = {Instance Segmentation of Scene Sketches Using Natural Image Priors},
-  author    = {Tang, Mia and Vinker, Yael and Yan, Chuan and Zhang, Lvmin and Agrawala, Maneesh},
-  booktitle = {Proceedings of the ACM SIGGRAPH Conference},
-  year      = {2025},
-  note      = {To appear at SIGGRAPH 2025}
+@inproceedings{tang2025inklayer,
+  author = {Tang, Mia and Vinker, Yael and Yan, Chuan and Zhang, Lvmin and Agrawala, Maneesh},
+  title = {Instance Segmentation of Scene Sketches Using Natural Image Priors},
+  year = {2025},
+  isbn = {9798400715402},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/3721238.3730606},
+  doi = {10.1145/3721238.3730606},
+  articleno = {96},
+  numpages = {10},
+  keywords = {Sketch Segmentation, Sketch Understanding, Sketch Editing},
+  series = {SIGGRAPH Conference Papers '25}
 }
 ```
 

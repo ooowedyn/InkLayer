@@ -267,7 +267,6 @@ def compute_ious(sketch_path, bboxes, scores, box1_index, remaining_indices, mas
     # Convert to numpy arrays for consistency
     return np.array(sketch_ious), np.array(bbox_ious), np.array(larger_indices)
 
-
 def sketch_nms(
     sketch_path: str,
     bboxes: np.ndarray,
@@ -300,14 +299,14 @@ def sketch_nms(
     for index_idx in tqdm(range(len(indices))):
         i = indices[index_idx]
         if keep[i]:
-            remaining_indices = order[i + 1 :]  # Get indices of remaining boxes
+            remaining_indices = order[i + 1:]  # Get indices of remaining boxes (these are filtered indices)
             if len(remaining_indices) > 0:
                 ious_sketch, ious_bbox, larger_indices = compute_ious(
                     sketch_path,
                     filtered_bboxes,
                     filtered_scores,
-                    order[i],
-                    remaining_indices,
+                    order[i],  # This is a filtered index
+                    remaining_indices,  # These are filtered indices
                     masks_dir,
                 )
                 overlapped = np.where(
@@ -319,21 +318,32 @@ def sketch_nms(
 
                 # For each overlapped box, check if we should keep the larger one
                 for idx, overlap_idx in enumerate(overlapped):
-                    original_idx = order[i]
-                    compared_idx = remaining_indices[overlap_idx]
-                    larger_idx = larger_indices[overlap_idx]
+                    current_filtered_idx = order[i]  # Current box (filtered index)
+                    compared_filtered_idx = remaining_indices[overlap_idx]  # Compared box (filtered index)
+                    larger_filtered_idx = larger_indices[overlap_idx]  # Larger box (filtered index)
+                    
+                    # Get original indices for logging
+                    current_original_idx = original_indices[i]
+                    compared_original_idx = sketch_kept_box_indices[compared_filtered_idx]
 
                     # If the larger box is the one we're comparing against
-                    if larger_idx == compared_idx:
-                        # Keep the larger box (compared_idx) and remove the smaller one (original_idx)
-                        keep[original_idx] = 0
+                    if larger_filtered_idx == compared_filtered_idx:
+                        # Keep the larger box (compared) and remove the smaller one (current)
+                        keep[i] = False  # Remove current box using filtered index
+                        print(f"Removed original index {current_original_idx} due to overlap with {compared_original_idx}")
                         break  # Exit loop since current box is removed
                     else:
                         # Keep the current box and remove the compared one
-                        keep[compared_idx] = 0
+                        # Find the position of compared_filtered_idx in the order array
+                        compared_position = np.where(order == compared_filtered_idx)[0][0]
+                        keep[compared_position] = False  # Remove compared box using its position
+                        print(f"Removed original index {compared_original_idx} due to overlap with {current_original_idx}")
 
     # Map the kept indices back to original indices
     final_kept_indices = original_indices[keep]
+    # Print out the removed original indices for debugging
+    removed_indices = original_indices[~keep]
+    print(f"Removed original indices: {removed_indices}")
 
     print(
         f"Filtered {len(filtered_bboxes)} to {len(final_kept_indices)} boxes with Sketch NMS"

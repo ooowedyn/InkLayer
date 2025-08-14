@@ -28,21 +28,34 @@ def draw_norm_bbox_on_image(
 
 
 def generate_pastel_colors(n_colors):
-    """Generate pastel colors and randomize their order"""
-    # Generate colors evenly spaced in hue
+    """Generate pastel colors with interleaved hue ordering for better contrast"""
+    # Generate evenly spaced hues
     hues = [x / n_colors for x in range(n_colors)]
-    
-    # Convert to RGB with fixed saturation and value for pastel effect
-    colors = [mcolors.hsv_to_rgb([hue, 0.7, 0.88]) for hue in hues]
-    
-    # Convert to RGB int format
+
+    # Interleave hues to maximize contrast
+    def interleave(lst):
+        result = []
+        queue = [lst]
+        while queue:
+            current = queue.pop(0)
+            if len(current) <= 1:
+                result += current
+            else:
+                queue.append(current[::2])
+                queue.append(current[1::2])
+        return result
+
+    reordered_hues = interleave(hues)
+
+    # Convert to RGB (pastel style with fixed S and V)
     colors = [
-        (int(color[0] * 255), int(color[1] * 255), int(color[2] * 255))
-        for color in colors
+        mcolors.hsv_to_rgb([h, 0.7, 0.88]) for h in reordered_hues
     ]
-    
-    # Randomize the order of colors to ensure adjacent instances get different colors
-    np.random.shuffle(colors)
+
+    # Convert to 0-255 RGB
+    colors = [
+        (int(r * 255), int(g * 255), int(b * 255)) for r, g, b in colors
+    ]
     
     return colors
 

@@ -211,3 +211,8 @@ __marimo__/
 
 models/*.pth
 output
+outputs_*
+uploads
+tmp
+outputs
+src
