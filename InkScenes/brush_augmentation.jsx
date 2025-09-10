@@ -84,15 +84,14 @@ var SCRIPT_CONFIG = {
             "BrushPen 42",                  // Index 6
             "Charcoal_smudged_3",           // Index 7
             "HEJ_ANGRY_STROKE_03",          // Index 8
-            "HEJ_TRUE_GRIS_M_STROKE_02",    // Index 9
-            'HEJ_TRUE_GRIS_M_STROKE_04',    // Index 10
-            'Graphite - B_short',           // Index 11
-            "Comic Book_Contrast 3"         // Index 12
+            'HEJ_TRUE_GRIS_M_STROKE_04',    // Index 9
+            'Graphite - B_short',           // Index 10
+            "Comic Book_Contrast 3"         // Index 11
         ],
         // Set this to the index of the brush you want to apply from the NAMES list above.
         // REMEMBER: Create a corresponding two-digit folder in your PNG_OUTPUT_FOLDER.
         // (e.g., for brush 1, create a folder named "01").
-        SELECTED_BRUSH_INDEX: 1
+        SELECTED_BRUSH_INDEX: 9
     },
 
     // --- PNG Export Options ---
