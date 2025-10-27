@@ -438,6 +438,17 @@ export function getInpaintInputs() {
     return inpaintInputs;
 }
 
+export function getSelectedLayer() {
+    return selectedLayer;
+}
+export { images, redrawCanvas, addImagesToDiv };
+
+export function getSelectedLayerUrl() {
+    if (!selectedLayer) return null;
+    if (!images[selectedLayer]) return null;
+    return images[selectedLayer].src;
+}
+
 /** CALLBACKS **/
 
 function fetchDemosCallback() {

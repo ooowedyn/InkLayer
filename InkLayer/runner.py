@@ -1,7 +1,10 @@
 # Third-party imports
-import os
+import os, base64, re
 from PIL import Image
 import subprocess
+from PIL import Image, ImageDraw
+from InkLayer.inpainting.inpaint_single_layer import inpaint_single_layer
+
 
 # Inklayer imports
 from InkLayer.detector.gdino import run_ft_dino_on_sketch
@@ -13,6 +16,7 @@ from InkLayer.refinement.bbox_filter import run_postprocess_boxes_on_sketch_dir
 from InkLayer.refinement.refiner import run_refinement_on_sketch_dir
 from InkLayer.inpainting.inpaint_ControlNet import run_inpainting_on_sketch_dir
 from InkLayer.inpainting.fill_object_bg_mask import create_rgba_with_background_mask_on_dir
+from InkLayer.inpainting.inpaint_single_layer import inpaint_single_layer
 
 def run_inklayer_pipeline(input_path, out_base_dir, no_intermediate=False, inpaint=False):
     input_name = os.path.basename(input_path).split(".")[0]
@@ -97,4 +101,72 @@ def run_inklayer_pipeline(input_path, out_base_dir, no_intermediate=False, inpai
                     os.remove(item_path)
 
     return out_dir
+def run_inpaint_single_layer(request_data, cur_dir, out_dir):
+    """
+    단일 레이어 인페인팅 실행 함수
 
+    request_data: dict 형태로 프론트에서 전달받은 JSON 데이터
+      {
+          "image_name": "...",
+          "layer_id": "2",
+          "layer_path": "static/outputs/.../layer_2.png",
+          "prompt": "make it blue"
+      }
+    out_dir: 결과 저장 디렉토리 (ex: static/outputs/inpaint_results)
+    """
+
+    # 1. JSON 데이터 파싱
+    image_name = request_data.get("image_name")
+    layer_id = request_data.get("layer_id")
+    layer_path = request_data.get("layer_path")
+    prompt = request_data.get("prompt")
+
+
+    print(f"[run_inpaint_single_layer] image_name={image_name}, layer_id={layer_id}")
+    print(f"layer_path={layer_path}, prompt={prompt}")
+
+    # 2. 전체 이미지와 해당 레이어 마스크 불러오기
+    layer_rel_path = layer_path.replace("http://127.0.0.1:5000", "").lstrip("/")
+    abs_layer_path = os.path.join(cur_dir, layer_rel_path)
+    abs_layer_path = os.path.normpath(abs_layer_path)
+
+    # base_dir: 해당 이미지의 상위 디렉토리 (예: static/outputs/fscoco_animals)
+    base_dir = os.path.join(cur_dir, f"static/outputs/{image_name}")
+    abs_image_path = os.path.join(base_dir, "input.png")
+    layer_id = os.path.basename(layer_path).split("_")[-1].split(".")[0]
+    abs_mask_path = os.path.join(base_dir, "masks_disjoint", f"mask_{layer_id}.png")
+
+    print(f"abs_layer_path = {abs_layer_path}")
+    print(f"abs_image_path = {abs_image_path}")
+    print(f"abs_mask_path  = {abs_mask_path}")
+
+    # 3. 마스크 영역을 박스 형태로 확장하여 별도 저장
+    expanded_mask_path = os.path.join(out_dir, f"mask_expanded_{layer_id}.png")
+    mask = Image.open(abs_mask_path).convert("L")
+
+    bbox = mask.getbbox()
+    if bbox:
+        # 여유 10px
+        x0, y0, x1, y1 = bbox
+        x0, y0 = max(0, x0 - 10), max(0, y0 - 10)
+        x1, y1 = min(mask.width, x1 + 10), min(mask.height, y1 + 10)
+        expanded = Image.new("L", mask.size, 0)
+        draw = ImageDraw.Draw(expanded)
+        draw.rectangle([x0, y0, x1, y1], fill=255)
+        expanded.save(expanded_mask_path)
+    else:
+        mask.save(expanded_mask_path)
+
+    print(f"expanded mask saved at: {expanded_mask_path}")
+
+    # 4. 실제 inpainting 실행
+    output_path = inpaint_single_layer(
+        image_path=abs_image_path,
+        mask_path=expanded_mask_path,
+        output_dir=out_dir,
+        prompt=prompt,
+        layer_id=layer_id,
+    )
+
+    # 5. 결과 반환 (RGBA 경로)
+    return output_path

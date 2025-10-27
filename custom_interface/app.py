@@ -11,7 +11,7 @@ import gc
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir)
-from InkLayer.runner import run_inklayer_pipeline
+from InkLayer.runner import run_inklayer_pipeline, run_inpaint_single_layer
 
 project_dir = os.path.abspath(f"{cur_dir}/../../")
 sys.path.append(project_dir)
@@ -196,6 +196,58 @@ def save_canvas_drawing():
         print(f"Error saving canvas drawing: {str(e)}")
         return jsonify({"error": f"Failed to save canvas drawing: {str(e)}"}), 500
 
+@app.route("/inpaint", methods=["POST"])
+def inpaint_layer():
+    data = request.get_json()
+    image_name = data.get("image_name")
+    layer_id = data.get("layer_id")
+    layer_path = data.get("layer_path")
+    prompt = data.get("prompt")
+
+    print("\n🟢 [Inpainting Request Received]")
+    print(f"image_name: {image_name}")
+    print(f"layer_id: {layer_id}")
+    print(f"layer_path: {layer_path}")
+    print(f"prompt: {prompt}")
+
+    # 필수 데이터 확인
+    if not all([image_name, layer_id, layer_path, prompt]):
+        print("❌ Missing required fields in request.")
+        return jsonify({"error": "Missing image_name, layer_id, layer_path or prompt"}), 400
+
+    out_dir = os.path.join(cur_dir, "inpaint_results")
+    out_dir = os.path.abspath(f"{cur_dir}/static/outputs/{image_name}/inpaint_results/")
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    try:
+        # 🔹 더미 인페인팅 처리 (실제 AI 모델 자리)
+        # 여기서는 단순히 같은 이미지를 새로 저장 (테스트용)
+        # updated_layer_path = abs_layer_path.replace(".png", "_updated.png")
+        # dummy_path = os.path.join(cur_dir, "static/outputs/dummy_transformed_image.png")
+
+        # with Image.open(abs_layer_path) as img:
+        #     img.save(updated_layer_path)
+
+        # print(f"✅ Dummy inpainting done. Saved at: {updated_layer_path}")
+
+        # Flask의 static 경로 기준으로 변환
+        # rel_path = updated_layer_path.replace(cur_dir, "").lstrip("/")
+        layer_url = run_inpaint_single_layer(data, cur_dir, out_dir)
+        rel_path = layer_url.replace(cur_dir, "").lstrip("/")
+        layer_url = f"/{rel_path}"
+
+        print(f"📤 Sending back updated URL: {layer_url}\n")
+
+        # 프론트로 응답
+        return jsonify({
+            "message": f"Inpainting completed for layer {layer_id}",
+            "layer_url": layer_url,
+            "layer_id": layer_id
+        })
+
+    except Exception as e:
+        print(f"❌ Error during dummy inpainting: {e}")
+        return jsonify({"error": f"Inpainting failed: {str(e)}"}), 500
 
 if __name__ == "__main__":
     import argparse
