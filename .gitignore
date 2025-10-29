@@ -210,9 +210,9 @@ __marimo__/
 .streamlit/secrets.toml
 
 models/*.pth
-output
-outputs_*
-uploads
+# output
+# outputs_*
+# uploads
 tmp
-outputs
+# outputs
 src
